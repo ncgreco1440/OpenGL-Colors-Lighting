@@ -55,9 +55,9 @@ void setCamera();
 /*************************************************************
  * Camera SetUp
  *************************************************************/
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 0.3f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 5.0f);    // Where the camera starts at initially
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f); // Along what axis and direction is the front of the camera
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);     // Controls inverted vs normal y-axis/x-axis controls
 GLfloat field_of_view = 45.0f;
 GLfloat lastX = WIDTH / 2.0;
 GLfloat lastY = HEIGHT / 2.0;
@@ -81,10 +81,13 @@ int main(int argc, const char * argv[]) {
     else
     {
         // Run console application...
-        glm::vec3 lightColor(0.33f, 0.42f, 0.18f);
-        glm::vec3 toyColor(1.0f, 0.5f, 0.31f);
-        glm::vec3 result = lightColor * toyColor;
-        std::cout << glm::to_string(result) << std::endl;
+        glm::mat4 myMatrix;
+        glm::vec4 myVector(5.0f, 0.4f, 1.5f, 1.0f);
+        myMatrix = glm::translate(myMatrix, glm::vec3(10.0f, 0.0f, 0.0f));
+        glm::vec4 translatedVector = myMatrix * myVector;
+        //std::cout << to_string(translatedVector) << std::endl;
+        myMatrix = glm::rotate(myMatrix, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        std::cout << to_string(myMatrix) << std::endl;
     }
     return 0;
 }
@@ -352,18 +355,18 @@ void createObject()
     
     GLfloat vertices[] = {
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  0.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 0.0f,
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
         
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
         
         -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
         -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
@@ -412,11 +415,11 @@ void createObject()
  * data we are about to pass into them.
  *************************************************************/
 //layout(location), size, type, should normalize, stride, offset
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (GLvoid*)0);
-    //glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (GLvoid*)(sizeof(GLfloat) * 3));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (GLvoid*)0);  //position
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (GLvoid*)(sizeof(GLfloat) * 3)); //color
 // Enable the locations
     glEnableVertexAttribArray(0);
-    //glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(1);
     
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -430,6 +433,20 @@ void createObject()
  *************************************************************/
 void drawObject()
 {
+    /**************************************************************
+     * model matrix
+     * ---------------
+     * Within the model's local space, it can be translated, 
+     * rotated, and scaled to kingdom come. This particular 
+     * matrix, however, has NO effect on our camera, 
+     * nor should it. It effects this object and this object
+     * ONLY.
+     *************************************************************/
+    glm::mat4 model;
+    float angle = sin(glfwGetTime());
+    model = glm::rotate(model, angle, glm::vec3(0, 1, 0));
+    shader.setUniform("model", model);
+    
     glBindVertexArray(VAO);
     
     glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -439,7 +456,7 @@ void drawObject()
 
 /**************************************************************
  * setCamera()
- * ---------------
+ * ----------
  * Sets up the camera positions for the application
  * this is called every frame, and does in fact 
  * interact with the vertex shader.
@@ -447,12 +464,19 @@ void drawObject()
 void setCamera()
 {
 // Coordinate Matrices
-    glm::mat4 model, view, proj;
-    model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1, 0, 1));
+    glm::mat4 view, proj;
+    // The view matrix is directly tied to the camera and thus is updated every frame
     view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+    /**************************************************************
+     * Perspective Matrix
+     * ------------------
+     * Realistically, this should not be set every frame. This
+     * is one of those features that if you want to change 
+     * you would force the player into a graphical settings
+     * menu.
+     *************************************************************/
     proj = glm::perspective(glm::radians(field_of_view), (GLfloat)WIDTH/(GLfloat)HEIGHT, 0.1f, 100.0f);
 // Set uniform values
-    shader.setUniform("model", model);
     shader.setUniform("view", view);
     shader.setUniform("projection", proj);
 }
@@ -477,5 +501,9 @@ void user_movement()
     if(keys[GLFW_KEY_D])
     {
         cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
+    if(keys[GLFW_KEY_SPACE])
+    {
+        cameraPos.y += 0.5 * cameraSpeed;
     }
 }

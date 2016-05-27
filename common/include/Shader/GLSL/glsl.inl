@@ -3,7 +3,8 @@ namespace shaders
     Shader_glsl::Shader_glsl():m_Handle(0){}
     Shader_glsl::~Shader_glsl()
     {
-        glDeleteProgram(m_Handle);
+        if(m_Handle > 0)
+            glDeleteProgram(m_Handle);
     }
     
     bool Shader_glsl::loadShaders(const char * vertShader, const char * fragShader)
