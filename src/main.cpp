@@ -2,6 +2,14 @@
 #include <GL/glew.h>
 #include <GL/glfw3.h>
 #include <iostream>
+// Including the entire GLM library
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+// Included for GLM's to_string() function
+#include <glm/gtx/string_cast.hpp>
+#include <Shader/GLSL/glsl.h>
+
+bool masterKey = true;
 
 /*************************************************************
  * Global Variables
@@ -9,6 +17,18 @@
  * Set up global variables for this application
  ************************************************************/
 GLFWwindow* window;
+GLuint VBO, VAO, IBO;
+const int WIDTH = 800;
+const int HEIGHT = 600;
+const char * TITLE = "OpenGL::Colors";
+shaders::GLSL_SHADER shader;
+bool firstMouse = true; // prevents jumpyness of camera on first load
+/*************************************************************
+ * Global Input
+ * ------------
+ * Array of bools to represent keys
+ ************************************************************/
+bool keys[1024];
 /*************************************************************
  * Global GLFW and GL Functions
  * ----------------------------
@@ -21,7 +41,29 @@ bool initGLFW();
 bool initGLEW();
 void checkForErrors();
 void setWindowHints();
+void setViewPort();
 void error_callback(int error, const char * desc);
+void key_callback(GLFWwindow * window, int key, int scancode, int action, int mode);
+void mouse_callback(GLFWwindow * window, double xpos, double ypos);
+void scroll_callback(GLFWwindow * window, double xoffset, double yoffset);
+/*************************************************************
+ * Drawing Functions
+*************************************************************/
+void createObject();
+void drawObject();
+void setCamera();
+/*************************************************************
+ * Camera SetUp
+ *************************************************************/
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 0.3f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+GLfloat field_of_view = 45.0f;
+GLfloat lastX = WIDTH / 2.0;
+GLfloat lastY = HEIGHT / 2.0;
+GLfloat yaw = -90.0f;
+GLfloat pitch = 0.0f;
+void user_movement();
 
 /**************************************************************
  * main()
@@ -29,9 +71,21 @@ void error_callback(int error, const char * desc);
  * C++ starts up through main
  *************************************************************/
 int main(int argc, const char * argv[]) {
-    startApplication();
-    runApplication();
-    terminateApplication();
+    if(masterKey)
+    {
+        // Run gui application...
+        startApplication();
+        runApplication();
+        terminateApplication();
+    }
+    else
+    {
+        // Run console application...
+        glm::vec3 lightColor(0.33f, 0.42f, 0.18f);
+        glm::vec3 toyColor(1.0f, 0.5f, 0.31f);
+        glm::vec3 result = lightColor * toyColor;
+        std::cout << glm::to_string(result) << std::endl;
+    }
     return 0;
 }
 
@@ -47,6 +101,8 @@ void startApplication()
         exit(-1);
     if(!initGLEW())
         exit(-1);
+    
+    createObject();
 }
 
 /**************************************************************
@@ -64,9 +120,14 @@ void runApplication()
         
     // Poll for and process events
         glfwPollEvents();
+        shader.use();
         
     // Render here
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        user_movement();
+        setCamera();
+        drawObject();
         
     // Swap front and back buffers
         glfwSwapBuffers(window);
@@ -82,6 +143,8 @@ void runApplication()
  *************************************************************/
 void terminateApplication()
 {
+    glDeleteBuffers(1, &VBO);
+    glDeleteVertexArrays(1, &VAO);
     glfwTerminate();
 }
 
@@ -100,16 +163,20 @@ bool initGLFW()
     setWindowHints();
     
 // Create the window
-    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+    window = glfwCreateWindow(WIDTH, HEIGHT, TITLE, NULL, NULL);
     if (!window)
     {
         glfwTerminate();
         return false;
     }
     
-// Make window the current context
+// Make window the current context and set all callback functions
     glfwMakeContextCurrent(window);
     glfwSetErrorCallback(error_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetKeyCallback(window, key_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     
     return true;
 }
@@ -135,11 +202,33 @@ bool initGLEW()
 // Long existing bug causes GL_INVALID_ENUM (1280) error after initialization.
 // Clear the error with glGetError()
     glGetError();
+    
+// !IMPORTANT! see comments above setViewPort implementation for details
+    setViewPort();
+    glEnable(GL_DEPTH_TEST);
 
 // Set our initial color to grey when the window first opens
-    glClearColor((GLclampf)0.8, (GLclampf)0.8, (GLclampf)0.8, (GLclampf)1.0);
+    glClearColor((GLclampf)0.2, (GLclampf)0.2, (GLclampf)0.2, (GLclampf)1.0);
     
     return true;
+}
+
+/**************************************************************
+ * glViewPort()
+ * ------------
+ * Viewports are a little tricky to figure out due to 
+ * differences in DPI of monitors. Because of this, it
+ * is NOT appropriate to simply use our window's HEIGHT and WIDTH
+ * values to specify our viewport.
+ * Instead we need to figure our FrameBufferSize of our window
+ * from there we use it's values as params for our 
+ * glViewport.
+ *************************************************************/
+void setViewPort()
+{
+    int w, h;
+    glfwGetFramebufferSize(window, &w, &h);
+    glViewport(0, 0, w, h);
 }
 
 /**************************************************************
@@ -154,7 +243,7 @@ void setWindowHints()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    //glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 }
 
 /**************************************************************
@@ -181,4 +270,212 @@ void checkForErrors()
 void error_callback(int error, const char * desc)
 {
     std::cerr << desc << std::endl;
+}
+
+/**************************************************************
+ * key_callback()
+ * ---------------
+ * Callback function for key presses and releases. 
+ * Sets the boolean value each time a key is 
+ * pressed or released and other functions 
+ * will run checks to see if the bools are 
+ * true and will act accordingly
+ *************************************************************/
+void key_callback(GLFWwindow * window, int key, int scancode, int action, int mode)
+{
+    if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) //exit application with 'esc' key
+    {
+        glfwSetWindowShouldClose(window, GL_TRUE);
+    }
+    if(action == GLFW_PRESS)
+        keys[key] = true;
+    else if(action == GLFW_RELEASE)
+        keys[key] = false;
+}
+
+void mouse_callback(GLFWwindow * window, double xpos, double ypos)
+{
+    GLfloat sensitivity = 0.15f;
+    
+    if(firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+    
+    GLfloat xOffset = (xpos - lastX);
+    GLfloat yOffset = (lastY - ypos);
+    
+    lastX = xpos;
+    lastY = ypos;
+    
+    xOffset *= sensitivity;
+    yOffset *= sensitivity;
+    
+    yaw += xOffset;
+    pitch += yOffset;
+    
+// Constraints for pitch angle
+    if(pitch > 89.0f)
+        pitch = 89.0f;
+    if(pitch < -89.0f)
+        pitch = -89.0f;
+    
+// Camera Variables
+    glm::vec3 front;
+    front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    front.y = sin(glm::radians(pitch));
+    front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    cameraFront = glm::normalize(front);
+}
+
+void scroll_callback(GLFWwindow * window, double xoffset, double yoffset)
+{
+    if(field_of_view >= 1.0f && field_of_view <= 45.0f)
+        field_of_view += yoffset;
+    if(field_of_view <= 1.0f)
+        field_of_view = 1.0f;
+    if(field_of_view >= 45.0f)
+        field_of_view = 45.0f;
+}
+
+/**************************************************************
+ * createObject()
+ * --------------
+ * Creates an object to be rendered on screen. 
+ * This can be a 2D or 3D object.
+ *************************************************************/
+void createObject()
+{
+    shader.loadShaders("shaders/shader.vert", "shaders/shader.frag");
+    
+    GLfloat vertices[] = {
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+    };
+    
+    glGenBuffers(1, &VBO);
+    glGenVertexArrays(1, &VAO);
+/**************************************************************
+ * Note that binding and unbinding VBOs and VAOs is expensive.
+ * Therefore, in real applications, you need to figure better
+ * practices so that you are more efficient.
+ *************************************************************/
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindVertexArray(VAO);
+    
+// Buffer the vertices data
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+/**************************************************************
+ * That takes care of our buffers, now we set up our
+ * attributes, so our Shaders know what do to with the 
+ * data we are about to pass into them.
+ *************************************************************/
+//layout(location), size, type, should normalize, stride, offset
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (GLvoid*)0);
+    //glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (GLvoid*)(sizeof(GLfloat) * 3));
+// Enable the locations
+    glEnableVertexAttribArray(0);
+    //glEnableVertexAttribArray(1);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+/**************************************************************
+ * drawObject()
+ * ---------------
+ * Draws the object that was created in createObject
+ * function
+ *************************************************************/
+void drawObject()
+{
+    glBindVertexArray(VAO);
+    
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    
+    glBindVertexArray(0);
+}
+
+/**************************************************************
+ * setCamera()
+ * ---------------
+ * Sets up the camera positions for the application
+ * this is called every frame, and does in fact 
+ * interact with the vertex shader.
+ *************************************************************/
+void setCamera()
+{
+// Coordinate Matrices
+    glm::mat4 model, view, proj;
+    model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1, 0, 1));
+    view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+    proj = glm::perspective(glm::radians(field_of_view), (GLfloat)WIDTH/(GLfloat)HEIGHT, 0.1f, 100.0f);
+// Set uniform values
+    shader.setUniform("model", model);
+    shader.setUniform("view", view);
+    shader.setUniform("projection", proj);
+}
+
+void user_movement()
+{
+// Camera Constant
+    GLfloat cameraSpeed = 0.2f; //* deltaTime;
+// Movement Keys
+    if(keys[GLFW_KEY_W])
+    {
+        cameraPos += cameraSpeed * cameraFront;
+    }
+    if(keys[GLFW_KEY_A])
+    {
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
+    if(keys[GLFW_KEY_S])
+    {
+        cameraPos -= cameraSpeed * cameraFront;
+    }
+    if(keys[GLFW_KEY_D])
+    {
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
 }
