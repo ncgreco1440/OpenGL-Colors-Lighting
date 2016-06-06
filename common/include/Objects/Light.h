@@ -10,6 +10,7 @@ class Light
 private:
     GLuint m_VAO;
     glm::vec3 m_lightPos;
+    glm::vec3 m_color;
     
     void defaultShaders()
     {
@@ -22,7 +23,7 @@ public:
     shaders::GLSL_SHADER m_shader;
     Light()
     {
-        
+        m_color = glm::vec3(1.0f);
     }
     
     Light(GLuint vbo, GLuint vao)
@@ -33,7 +34,7 @@ public:
         glBindVertexArray(vao);
         
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GL_FLOAT), (GLvoid*)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GL_FLOAT), (GLvoid*)0);
         glEnableVertexAttribArray(0);
         glBindVertexArray(0);
         
@@ -48,7 +49,7 @@ public:
         glBindVertexArray(vao);
         
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GL_FLOAT), (GLvoid*)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GL_FLOAT), (GLvoid*)0);
         glEnableVertexAttribArray(0);
         glBindVertexArray(0);
         
@@ -62,7 +63,6 @@ public:
     
     void init()
     {
-        this->defaultShaders();
         this->m_lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
     }
     
@@ -72,7 +72,7 @@ public:
         glBindVertexArray(vao);
         
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GL_FLOAT), (GLvoid*)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GL_FLOAT), (GLvoid*)0);
         glEnableVertexAttribArray(0);
         glBindVertexArray(0);
         
@@ -96,6 +96,21 @@ public:
         glDrawArrays(GL_TRIANGLES, 0, 36);
         
         glBindVertexArray(0);
+    }
+    
+    void setColor(float r, float g, float b)
+    {
+        m_color = glm::vec3(r,g,b);
+    }
+    
+    glm::vec3 getColor()
+    {
+        return m_color;
+    }
+    
+    glm::vec3 getPos()
+    {
+        return m_lightPos;
     }
 };
 

@@ -142,7 +142,7 @@ void runApplication()
         view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
         proj = glm::perspective(glm::radians(field_of_view), (GLfloat)WIDTH/(GLfloat)HEIGHT, 0.1f, 100.0f);
         
-        model = glm::translate(model, glm::vec3(1.2f, 1.0f, 2.0f));
+        model = glm::translate(model, light.getPos());
         model = glm::scale(model, glm::vec3(0.2f));
        
         lightShader.setUniform("model", model);
@@ -230,7 +230,7 @@ bool initGLEW()
     //glEnable(GL_CULL_FACE); // Uncomment to figure out if your model's normals are correct
 
 // Set our initial color to grey when the window first opens
-    glClearColor((GLclampf)0.2, (GLclampf)0.2, (GLclampf)0.2, (GLclampf)1.0);
+    glClearColor((GLclampf)0.0, (GLclampf)0.0, (GLclampf)0.0, (GLclampf)1.0);
     
     return true;
 }
@@ -372,48 +372,92 @@ void createObject()
 {
     shader.loadShaders_File("shaders/shader.vert", "shaders/shader.frag");
     
+//    GLfloat vertices[] = {
+//        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+//        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+//        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+//        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+//        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+//        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+//        
+//        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+//        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+//        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+//        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+//        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+//        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+//        
+//        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+//        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+//        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+//        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+//        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+//        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+//        
+//        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+//        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+//        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+//        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+//        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+//        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+//        
+//        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+//        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+//        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+//        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+//        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+//        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+//        
+//        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+//        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+//        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+//        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+//        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+//        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+//    };
+    
     GLfloat vertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
         
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
         
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
         
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
         
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
         
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+        0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
     };
     
     glGenBuffers(1, &VBO);
@@ -434,11 +478,11 @@ void createObject()
  * data we are about to pass into them.
  *************************************************************/
 //layout(location), size, type, should normalize, stride, offset
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (GLvoid*)0);  //position
-    //glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (GLvoid*)(sizeof(GLfloat) * 3)); //color
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 6, (GLvoid*)0);  //position
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 6, (GLvoid*)(sizeof(GLfloat) * 3)); //color
 // Enable the locations
     glEnableVertexAttribArray(0);
-    //glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(1);
     
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -446,7 +490,9 @@ void createObject()
 
 void createLamp()
 {
+    light.init();
     light.assignBuffers(VBO, lightVAO);
+    light.setColor(1.0f, 1.0f, 1.0f);
     lightShader.loadShaders_File("shaders/shader.vert", "shaders/light.frag");
 }
 
@@ -471,6 +517,8 @@ void drawObject()
      * ONLY.
      *************************************************************/
     glm::mat4 model, tran, rot;
+    glm::mat3 normal_model;
+    
     if(jumping)
     {
         if(jHeight <= 1.0f && !maxHeightReached)
@@ -485,15 +533,18 @@ void drawObject()
         if(jHeight <= 0.0 && jumping) { jumping = false; maxHeightReached = false; }
         tran = glm::translate(tran, glm::vec3(0.0f, jHeight, 0.0f));
     }
-    //rot = glm::rotate(rot, glm::radians(angle++), glm::vec3(0, 1, 0));
-    //model = rot * tran;
-    //if(angle == 360)
-    //    angle = 0;
+    rot = glm::rotate(rot, glm::radians(angle++), glm::vec3(0, 1, 0));
+    model = rot * tran;
+    if(angle == 360)
+        angle = 0;
+    normal_model = glm::transpose(glm::inverse(glm::mat3(model))); // To apply lighting in all correct areas when scaled/rotated
     
     // Apply the light to this object
     shader.setUniform("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
-    shader.setUniform("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+    shader.setUniform("lightColor", light.getColor());
     shader.setUniform("model", model);
+    shader.setUniform("lightPos", light.getPos());
+    shader.setUniform("normal_model", normal_model);
     
     glBindVertexArray(VAO);
     
@@ -527,6 +578,8 @@ void setCamera()
 // Set uniform values
     shader.setUniform("view", view);
     shader.setUniform("projection", proj);
+    
+    shader.setUniform("viewPos", cameraPos); // For specular lighting
 }
 
 void user_movement()

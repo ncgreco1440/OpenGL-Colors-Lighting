@@ -37,6 +37,7 @@ namespace shaders
         void setUniform(const GLchar *, const glm::vec3& v);
         void setUniform(const GLchar *, const glm::vec4& v);
         void setUniform(const GLchar * name, const glm::mat4& m);
+        void setUniform(const GLchar * name, const glm::mat3& m);
         GLuint reference();
     private:
         string fileToString(const string&);

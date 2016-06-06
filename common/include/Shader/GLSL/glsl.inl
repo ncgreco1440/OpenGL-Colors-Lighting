@@ -170,6 +170,12 @@ namespace shaders
         glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(m));
     }
     
+    void Shader_glsl::setUniform(const GLchar * name, const glm::mat3& m)
+    {
+        GLint loc = getUniformLocation(name);
+        glUniformMatrix3fv(loc, 1, GL_FALSE, glm::value_ptr(m));
+    }
+    
     GLuint Shader_glsl::reference()
     {
         return m_Handle;
