@@ -7,7 +7,7 @@ namespace shaders
             glDeleteProgram(m_Handle);
     }
     
-    bool Shader_glsl::loadShaders(const char * vertShader, const char * fragShader)
+    bool Shader_glsl::loadShaders_File(const char * vertShader, const char * fragShader)
     {
         string vsStr = fileToString(vertShader);
         string fsStr = fileToString(fragShader);
@@ -42,10 +42,46 @@ namespace shaders
         return true;
     }
     
+    bool Shader_glsl::loadShaders_CStr(const char * vector, const char * fragment)
+    {
+        GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+        GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+        
+        // Compile Shaders
+        glShaderSource(vertexShader, 1, &vector, nullptr);
+        glCompileShader(vertexShader);
+        checkCompileErrors(vertexShader, VERTEX);
+        glShaderSource(fragmentShader, 1, &fragment, nullptr);
+        glCompileShader(fragmentShader);
+        checkCompileErrors(fragmentShader, FRAGMENT);
+        
+        // Create Shader Program
+        m_Handle = glCreateProgram();
+        
+        glAttachShader(m_Handle, vertexShader);
+        glAttachShader(m_Handle, fragmentShader);
+        glLinkProgram(m_Handle);
+        checkCompileErrors(m_Handle, PROGRAM);
+        
+        // After shaders are linked, delete them to free up the memory
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+        
+        mUniformLocation.clear();
+        
+        return true;
+    }
+    
     void Shader_glsl::use()
     {
         if(m_Handle > 0)
             glUseProgram(m_Handle);
+    }
+    
+    void Shader_glsl::unuse()
+    {
+        if(m_Handle != 0)
+            glUseProgram(0);
     }
 
     string Shader_glsl::fileToString(const string& filename)

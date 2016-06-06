@@ -29,8 +29,10 @@ namespace shaders
         };
         Shader_glsl();
         ~Shader_glsl();
-        bool loadShaders(const char *, const char *);
+        bool loadShaders_File(const char *, const char *);
+        bool loadShaders_CStr(const char *, const char *);
         void use();
+        void unuse();
         void setUniform(const GLchar *, const glm::vec2& v);
         void setUniform(const GLchar *, const glm::vec3& v);
         void setUniform(const GLchar *, const glm::vec4& v);

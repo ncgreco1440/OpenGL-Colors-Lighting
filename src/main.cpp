@@ -8,6 +8,7 @@
 // Included for GLM's to_string() function
 #include <glm/gtx/string_cast.hpp>
 #include <Shader/GLSL/glsl.h>
+#include <Objects/Light.h>
 
 bool masterKey = true;
 
@@ -17,11 +18,13 @@ bool masterKey = true;
  * Set up global variables for this application
  ************************************************************/
 GLFWwindow* window;
-GLuint VBO, VAO, IBO;
+GLuint VBO, VAO, IBO, lightVAO;
 const int WIDTH = 800;
 const int HEIGHT = 600;
 const char * TITLE = "OpenGL::Colors";
 shaders::GLSL_SHADER shader;
+shaders::GLSL_SHADER lightShader;
+Light light;
 bool firstMouse = true; // prevents jumpyness of camera on first load
 bool jumping = false;
 /*************************************************************
@@ -53,6 +56,8 @@ void scroll_callback(GLFWwindow * window, double xoffset, double yoffset);
 void createObject();
 void drawObject();
 void setCamera();
+void createLamp();
+void drawLamp();
 /*************************************************************
  * Camera SetUp
  *************************************************************/
@@ -98,8 +103,9 @@ void startApplication()
         exit(-1);
     if(!initGLEW())
         exit(-1);
-    
+
     createObject();
+    createLamp();
 }
 
 /**************************************************************
@@ -117,14 +123,32 @@ void runApplication()
         
     // Poll for and process events
         glfwPollEvents();
-        shader.use();
+        
         
     // Render here
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
+    // Draw the Cube
+        shader.use();
         user_movement();
         setCamera();
+        
         drawObject();
+        
+    // Set/Draw the light
+        lightShader.use();
+        glm::mat4 model, view, proj;
+        
+        view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        proj = glm::perspective(glm::radians(field_of_view), (GLfloat)WIDTH/(GLfloat)HEIGHT, 0.1f, 100.0f);
+        
+        model = glm::translate(model, glm::vec3(1.2f, 1.0f, 2.0f));
+        model = glm::scale(model, glm::vec3(0.2f));
+       
+        lightShader.setUniform("model", model);
+        lightShader.setUniform("view", view);
+        lightShader.setUniform("projection", proj);
+        light.draw();
         
     // Swap front and back buffers
         glfwSwapBuffers(window);
@@ -346,22 +370,22 @@ void scroll_callback(GLFWwindow * window, double xoffset, double yoffset)
  *************************************************************/
 void createObject()
 {
-    shader.loadShaders("shaders/shader.vert", "shaders/shader.frag");
+    shader.loadShaders_File("shaders/shader.vert", "shaders/shader.frag");
     
     GLfloat vertices[] = {
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  0.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
         
-        -0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
         
         -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
         -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
@@ -411,13 +435,19 @@ void createObject()
  *************************************************************/
 //layout(location), size, type, should normalize, stride, offset
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (GLvoid*)0);  //position
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (GLvoid*)(sizeof(GLfloat) * 3)); //color
+    //glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (GLvoid*)(sizeof(GLfloat) * 3)); //color
 // Enable the locations
     glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
+    //glEnableVertexAttribArray(1);
     
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+}
+
+void createLamp()
+{
+    light.assignBuffers(VBO, lightVAO);
+    lightShader.loadShaders_File("shaders/shader.vert", "shaders/light.frag");
 }
 
 /**************************************************************
@@ -455,10 +485,14 @@ void drawObject()
         if(jHeight <= 0.0 && jumping) { jumping = false; maxHeightReached = false; }
         tran = glm::translate(tran, glm::vec3(0.0f, jHeight, 0.0f));
     }
-    rot = glm::rotate(rot, glm::radians(angle++), glm::vec3(0, 1, 0));
-    model = rot * tran;
-    if(angle == 360)
-        angle = 0;
+    //rot = glm::rotate(rot, glm::radians(angle++), glm::vec3(0, 1, 0));
+    //model = rot * tran;
+    //if(angle == 360)
+    //    angle = 0;
+    
+    // Apply the light to this object
+    shader.setUniform("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
+    shader.setUniform("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
     shader.setUniform("model", model);
     
     glBindVertexArray(VAO);
