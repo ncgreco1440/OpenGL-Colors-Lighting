@@ -23,6 +23,7 @@ const int HEIGHT = 600;
 const char * TITLE = "OpenGL::Colors";
 shaders::GLSL_SHADER shader;
 bool firstMouse = true; // prevents jumpyness of camera on first load
+bool jumping = false;
 /*************************************************************
  * Global Input
  * ------------
@@ -81,13 +82,6 @@ int main(int argc, const char * argv[]) {
     else
     {
         // Run console application...
-        glm::mat4 myMatrix;
-        glm::vec4 myVector(5.0f, 0.4f, 1.5f, 1.0f);
-        myMatrix = glm::translate(myMatrix, glm::vec3(10.0f, 0.0f, 0.0f));
-        glm::vec4 translatedVector = myMatrix * myVector;
-        //std::cout << to_string(translatedVector) << std::endl;
-        myMatrix = glm::rotate(myMatrix, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        std::cout << to_string(myMatrix) << std::endl;
     }
     return 0;
 }
@@ -209,6 +203,7 @@ bool initGLEW()
 // !IMPORTANT! see comments above setViewPort implementation for details
     setViewPort();
     glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_CULL_FACE); // Uncomment to figure out if your model's normals are correct
 
 // Set our initial color to grey when the window first opens
     glClearColor((GLclampf)0.2, (GLclampf)0.2, (GLclampf)0.2, (GLclampf)1.0);
@@ -433,6 +428,9 @@ void createObject()
  *************************************************************/
 void drawObject()
 {
+    static float angle = 0.0f;
+    static float jHeight = 0.0f;
+    static bool maxHeightReached = false;
     /**************************************************************
      * model matrix
      * ---------------
@@ -442,9 +440,25 @@ void drawObject()
      * nor should it. It effects this object and this object
      * ONLY.
      *************************************************************/
-    glm::mat4 model;
-    float angle = sin(glfwGetTime());
-    model = glm::rotate(model, angle, glm::vec3(0, 1, 0));
+    glm::mat4 model, tran, rot;
+    if(jumping)
+    {
+        if(jHeight <= 1.0f && !maxHeightReached)
+        {
+            jHeight+=0.05;
+            if(jHeight >= 1.0f) { maxHeightReached = true; }
+        }
+        else
+        {
+            jHeight-=0.05;
+        }
+        if(jHeight <= 0.0 && jumping) { jumping = false; maxHeightReached = false; }
+        tran = glm::translate(tran, glm::vec3(0.0f, jHeight, 0.0f));
+    }
+    rot = glm::rotate(rot, glm::radians(angle++), glm::vec3(0, 1, 0));
+    model = rot * tran;
+    if(angle == 360)
+        angle = 0;
     shader.setUniform("model", model);
     
     glBindVertexArray(VAO);
@@ -505,5 +519,9 @@ void user_movement()
     if(keys[GLFW_KEY_SPACE])
     {
         cameraPos.y += 0.5 * cameraSpeed;
+    }
+    if(keys[GLFW_KEY_H])
+    {
+        jumping = true;
     }
 }
