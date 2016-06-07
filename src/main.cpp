@@ -10,6 +10,7 @@
 #include <Shader/GLSL/glsl.h>
 #include <Objects/Light.h>
 #include <Objects/Camera.h>
+#include <Objects/Material.h>
 
 bool masterKey = true;
 
@@ -61,6 +62,7 @@ void drawObject();
 void setCamera();
 void createLamp();
 void drawLamp();
+void createMaterials();
 /*************************************************************
  * Camera SetUp
  *************************************************************/
@@ -97,7 +99,8 @@ void startApplication()
         exit(-1);
     if(!initGLEW())
         exit(-1);
-
+    
+    createMaterials();
     createObject();
     createLamp();
 }
@@ -314,6 +317,15 @@ void scroll_callback(GLFWwindow * window, double xoffset, double yoffset)
     cam.zoom(yoffset);
 }
 
+void createMaterials()
+{
+// Emerald
+    material_Emerald.ambient = glm::vec3(0.2, 0.85, 0.2);
+    material_Emerald.diffuse = glm::vec3(0.2, 0.85, 0.2);
+    material_Emerald.specular = glm::vec3(0.7, 0.7, 0.7);
+    material_Emerald.shininess = 128.0f;
+}
+
 /**************************************************************
  * createObject()
  * --------------
@@ -503,10 +515,15 @@ void setMaterials()
     glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f); // Decrease the Influence
     glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f); // Low Influence
     
-    shader.setUniform("material.ambient", glm::vec3(1.0f, 0.5f, 0.31f));
-    shader.setUniform("material.diffuse", glm::vec3(1.0f, 0.5f, 0.31f));
-    shader.setUniform("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
-    shader.setUniform("material.shininess", 32.0f);
+//    shader.setUniform("material.ambient", glm::vec3(1.0f, 0.5f, 0.31f));
+//    shader.setUniform("material.diffuse", glm::vec3(1.0f, 0.5f, 0.31f));
+//    shader.setUniform("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+//    shader.setUniform("material.shininess", 32.0f);
+      shader.setUniform("material.ambient", material_Emerald.ambient);
+      shader.setUniform("material.diffuse", material_Emerald.diffuse);
+      shader.setUniform("material.specular", material_Emerald.specular);
+      shader.setUniform("material.shininess", material_Emerald.shininess);
+
     
     shader.setUniform("light.position", light.getPos());
     shader.setUniform("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f));
