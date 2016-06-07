@@ -1,5 +1,5 @@
-#ifndef LIGHT_H_
-#define LIGHT_H_
+#ifndef GRAPHICS_LIGHT_H_
+#define GRAPHICS_LIGHT_H_
 
 #include "GL/glew.h"
 #include "Shader/GLSL/glsl.h"
@@ -14,10 +14,10 @@ private:
     
     void defaultShaders()
     {
-//        const char * vertex = "#version 330 core\nlayout(location = 0) in vec3 pos;\nuniform mat4 model;\nuniform mat4 view\n;uniform mat4 projection;\n\nvoid main()\n{\ngl_Position = projection * view * model * vec4(pos, 1.0f);\n}";
-//        const char * fragment = "#version 330 core\nout vec4 color;\nvoid main()\n{\ncolor=vec4(1.0f);}";
-//        m_shader.loadShaders_CStr(vertex, fragment);
-        m_shader.loadShaders_File("shaders/shader.vert", "shaders/light.frag");
+        const char * vertex = "#version 330 core\nlayout(location = 0) in vec3 pos;\nuniform mat4 model;\nuniform mat4 view\n;uniform mat4 projection;\n\nvoid main()\n{\ngl_Position = projection * view * model * vec4(pos, 1.0f);\n}";
+        const char * fragment = "#version 330 core\nout vec4 color;\nuniform vec4 lightClr;\nvoid main()\n{\ncolor=vec4(0.6f);\ncolor=lightClr;\n}";
+        m_shader.loadShaders_CStr(vertex, fragment);
+        //m_shader.loadShaders_File("shaders/shader.vert", "shaders/light.frag");
     }
 public:
     shaders::GLSL_SHADER m_shader;
@@ -29,31 +29,13 @@ public:
     Light(GLuint vbo, GLuint vao)
     {
         this->defaultShaders();
-        
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
-        
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GL_FLOAT), (GLvoid*)0);
-        glEnableVertexAttribArray(0);
-        glBindVertexArray(0);
-        
-        m_VAO = vao;
+        assignBuffers(vbo, vao);
     }
 
     Light(const char * vertex, const char * fragment, GLuint vbo, GLuint vao)
     {
         m_shader.loadShaders_File(vertex, fragment);
-        
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
-        
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GL_FLOAT), (GLvoid*)0);
-        glEnableVertexAttribArray(0);
-        glBindVertexArray(0);
-        
-        m_VAO = vao;
+        assignBuffers(vbo, vao);
     }
     
     ~Light()

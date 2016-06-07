@@ -9,6 +9,7 @@
 #include <glm/gtx/string_cast.hpp>
 #include <Shader/GLSL/glsl.h>
 #include <Objects/Light.h>
+#include <Objects/Camera.h>
 
 bool masterKey = true;
 
@@ -54,6 +55,8 @@ void scroll_callback(GLFWwindow * window, double xoffset, double yoffset);
  * Drawing Functions
 *************************************************************/
 void createObject();
+void setMaterials();
+void transformObject();
 void drawObject();
 void setCamera();
 void createLamp();
@@ -61,16 +64,7 @@ void drawLamp();
 /*************************************************************
  * Camera SetUp
  *************************************************************/
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 5.0f);    // Where the camera starts at initially
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f); // Along what axis and direction is the front of the camera
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);     // Controls inverted vs normal y-axis/x-axis controls
-GLfloat field_of_view = 45.0f;
-GLfloat lastX = WIDTH / 2.0;
-GLfloat lastY = HEIGHT / 2.0;
-GLfloat yaw = -90.0f;
-GLfloat pitch = 0.0f;
-void user_movement();
-
+Camera cam(WIDTH, HEIGHT, -90.0f, 0.0f);
 /**************************************************************
  * main()
  * -----
@@ -130,24 +124,19 @@ void runApplication()
         
     // Draw the Cube
         shader.use();
-        user_movement();
+        cam.move(keys);
         setCamera();
-        
         drawObject();
         
     // Set/Draw the light
         lightShader.use();
-        glm::mat4 model, view, proj;
-        
-        view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-        proj = glm::perspective(glm::radians(field_of_view), (GLfloat)WIDTH/(GLfloat)HEIGHT, 0.1f, 100.0f);
-        
+        glm::mat4 model;
         model = glm::translate(model, light.getPos());
         model = glm::scale(model, glm::vec3(0.2f));
        
         lightShader.setUniform("model", model);
-        lightShader.setUniform("view", view);
-        lightShader.setUniform("projection", proj);
+        lightShader.setUniform("view", cam.getView());
+        lightShader.setUniform("projection", cam.getProj());
         light.draw();
         
     // Swap front and back buffers
@@ -317,49 +306,12 @@ void key_callback(GLFWwindow * window, int key, int scancode, int action, int mo
 
 void mouse_callback(GLFWwindow * window, double xpos, double ypos)
 {
-    GLfloat sensitivity = 0.15f;
-    
-    if(firstMouse)
-    {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
-    
-    GLfloat xOffset = (xpos - lastX);
-    GLfloat yOffset = (lastY - ypos);
-    
-    lastX = xpos;
-    lastY = ypos;
-    
-    xOffset *= sensitivity;
-    yOffset *= sensitivity;
-    
-    yaw += xOffset;
-    pitch += yOffset;
-    
-// Constraints for pitch angle
-    if(pitch > 89.0f)
-        pitch = 89.0f;
-    if(pitch < -89.0f)
-        pitch = -89.0f;
-    
-// Camera Variables
-    glm::vec3 front;
-    front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    front.y = sin(glm::radians(pitch));
-    front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    cameraFront = glm::normalize(front);
+    cam.look(xpos, ypos);
 }
 
 void scroll_callback(GLFWwindow * window, double xoffset, double yoffset)
 {
-    if(field_of_view >= 1.0f && field_of_view <= 45.0f)
-        field_of_view += yoffset;
-    if(field_of_view <= 1.0f)
-        field_of_view = 1.0f;
-    if(field_of_view >= 45.0f)
-        field_of_view = 45.0f;
+    cam.zoom(yoffset);
 }
 
 /**************************************************************
@@ -370,7 +322,7 @@ void scroll_callback(GLFWwindow * window, double xoffset, double yoffset)
  *************************************************************/
 void createObject()
 {
-    shader.loadShaders_File("shaders/shader.vert", "shaders/shader.frag");
+    shader.loadShaders_File("shaders/shader.vert", "shaders/material.frag");
     
 //    GLfloat vertices[] = {
 //        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -496,13 +448,7 @@ void createLamp()
     lightShader.loadShaders_File("shaders/shader.vert", "shaders/light.frag");
 }
 
-/**************************************************************
- * drawObject()
- * ---------------
- * Draws the object that was created in createObject
- * function
- *************************************************************/
-void drawObject()
+void transformObject()
 {
     static float angle = 0.0f;
     static float jHeight = 0.0f;
@@ -510,9 +456,9 @@ void drawObject()
     /**************************************************************
      * model matrix
      * ---------------
-     * Within the model's local space, it can be translated, 
-     * rotated, and scaled to kingdom come. This particular 
-     * matrix, however, has NO effect on our camera, 
+     * Within the model's local space, it can be translated,
+     * rotated, and scaled to kingdom come. This particular
+     * matrix, however, has NO effect on our camera,
      * nor should it. It effects this object and this object
      * ONLY.
      *************************************************************/
@@ -540,11 +486,44 @@ void drawObject()
     normal_model = glm::transpose(glm::inverse(glm::mat3(model))); // To apply lighting in all correct areas when scaled/rotated
     
     // Apply the light to this object
-    shader.setUniform("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
-    shader.setUniform("lightColor", light.getColor());
+    //shader.setUniform("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
+    //shader.setUniform("lightColor", light.getColor());
+    
     shader.setUniform("model", model);
-    shader.setUniform("lightPos", light.getPos());
     shader.setUniform("normal_model", normal_model);
+}
+
+void setMaterials()
+{
+    glm::vec3 lightColor;
+    lightColor.x = sin(glfwGetTime() * 2.0f);
+    lightColor.y = sin(glfwGetTime() * 0.7f);
+    lightColor.z = sin(glfwGetTime() * 1.3f);
+    
+    glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f); // Decrease the Influence
+    glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f); // Low Influence
+    
+    shader.setUniform("material.ambient", glm::vec3(1.0f, 0.5f, 0.31f));
+    shader.setUniform("material.diffuse", glm::vec3(1.0f, 0.5f, 0.31f));
+    shader.setUniform("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+    shader.setUniform("material.shininess", 32.0f);
+    
+    shader.setUniform("light.position", light.getPos());
+    shader.setUniform("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f));
+    shader.setUniform("light.diffuse", glm::vec3(0.5f, 0.5f, 0.5f));
+    shader.setUniform("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
+}
+
+/**************************************************************
+ * drawObject()
+ * ---------------
+ * Draws the object that was created in createObject
+ * function
+ *************************************************************/
+void drawObject()
+{
+    transformObject();
+    setMaterials();
     
     glBindVertexArray(VAO);
     
@@ -562,53 +541,11 @@ void drawObject()
  *************************************************************/
 void setCamera()
 {
-// Coordinate Matrices
-    glm::mat4 view, proj;
-    // The view matrix is directly tied to the camera and thus is updated every frame
-    view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-    /**************************************************************
-     * Perspective Matrix
-     * ------------------
-     * Realistically, this should not be set every frame. This
-     * is one of those features that if you want to change 
-     * you would force the player into a graphical settings
-     * menu.
-     *************************************************************/
-    proj = glm::perspective(glm::radians(field_of_view), (GLfloat)WIDTH/(GLfloat)HEIGHT, 0.1f, 100.0f);
+// Perpective changes based on width and height
+    cam.setCamera(WIDTH, HEIGHT);
 // Set uniform values
-    shader.setUniform("view", view);
-    shader.setUniform("projection", proj);
+    shader.setUniform("view", cam.getView());
+    shader.setUniform("projection", cam.getProj());
     
-    shader.setUniform("viewPos", cameraPos); // For specular lighting
-}
-
-void user_movement()
-{
-// Camera Constant
-    GLfloat cameraSpeed = 0.2f; //* deltaTime;
-// Movement Keys
-    if(keys[GLFW_KEY_W])
-    {
-        cameraPos += cameraSpeed * cameraFront;
-    }
-    if(keys[GLFW_KEY_A])
-    {
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    }
-    if(keys[GLFW_KEY_S])
-    {
-        cameraPos -= cameraSpeed * cameraFront;
-    }
-    if(keys[GLFW_KEY_D])
-    {
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    }
-    if(keys[GLFW_KEY_SPACE])
-    {
-        cameraPos.y += 0.5 * cameraSpeed;
-    }
-    if(keys[GLFW_KEY_H])
-    {
-        jumping = true;
-    }
+    shader.setUniform("viewPos", cam.getPosition()); // For specular lighting
 }
