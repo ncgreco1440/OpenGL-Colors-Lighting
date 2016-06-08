@@ -23,7 +23,7 @@ bool masterKey = true;
  * Set up global variables for this application
  ************************************************************/
 GLFWwindow* window;
-GLuint VBO, VAO, IBO, lightVAO, texture1;
+GLuint VBO, VAO, IBO, lightVAO, texture1, texture2;
 const int WIDTH = 800;
 const int HEIGHT = 600;
 const char * TITLE = "OpenGL::Colors";
@@ -201,7 +201,7 @@ bool initGLFW()
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetKeyCallback(window, key_callback);
     glfwSetScrollCallback(window, scroll_callback);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     
     return true;
 }
@@ -396,6 +396,19 @@ void loadTexture()
 // Free up memory
     SOIL_free_image_data(image);
     glBindTexture(GL_TEXTURE_2D, 0);
+    
+    
+// Loading second texture
+    image = SOIL_load_image("textures/container2_specular.png", &w, &h, 0, SOIL_LOAD_RGB);
+    glGenTextures(1, &texture2);
+    glBindTexture(GL_TEXTURE_2D, texture2);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+    SOIL_free_image_data(image);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 /**************************************************************
@@ -550,7 +563,7 @@ void setMaterials()
     
     //shader.setUniform("material.ambient", currentMaterial.ambient);
     shader.setUniform("material.diffuse", 0);
-    shader.setUniform("material.specular", glm::vec3(1.0f));
+    shader.setUniform("material.specular", 1);
     shader.setUniform("material.shininess", 32.0f);
 
     
@@ -572,7 +585,10 @@ void drawObject()
     setMaterials();
     
     glBindVertexArray(VAO);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture1);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, texture2);
     
     glDrawArrays(GL_TRIANGLES, 0, 36);
     
