@@ -146,6 +146,12 @@ namespace shaders
         return mUniformLocation[name];
     }
     
+    void Shader_glsl::setUniform(const GLchar * name, const int i)
+    {
+        GLint loc = getUniformLocation(name);
+        glUniform1i(loc, i);
+    }
+    
     void Shader_glsl::setUniform(const GLchar * name, const float f)
     {
         GLint loc = getUniformLocation(name);

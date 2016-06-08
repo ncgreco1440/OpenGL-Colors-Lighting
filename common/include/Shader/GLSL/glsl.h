@@ -33,6 +33,7 @@ namespace shaders
         bool loadShaders_CStr(const char *, const char *);
         void use();
         void unuse();
+        void setUniform(const GLchar *, const int i);
         void setUniform(const GLchar *, const float f);
         void setUniform(const GLchar *, const glm::vec2& v);
         void setUniform(const GLchar *, const glm::vec3& v);
