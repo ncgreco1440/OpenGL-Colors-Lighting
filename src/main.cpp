@@ -11,6 +11,7 @@
 #include <Objects/Light.h>
 #include <Objects/Camera.h>
 #include <Objects/Material.h>
+#include <Objects/Shape.h>
 
 bool masterKey = true;
 
@@ -63,9 +64,17 @@ void setCamera();
 void createLamp();
 void drawLamp();
 void createMaterials();
+graphics::Material Emerald;
+graphics::Material Pearl;
+graphics::Material Bronze;
+graphics::Material Gold;
+graphics::Material Cyan_Plastic;
+graphics::Material Red_Plastic;
+graphics::Material Green_Rubber;
+graphics::Material Yellow_Rubber;
 /*************************************************************
  * Camera SetUp
- *************************************************************/
+ ************************************************************/
 Camera cam(WIDTH, HEIGHT, -90.0f, 0.0f);
 /**************************************************************
  * main()
@@ -320,10 +329,45 @@ void scroll_callback(GLFWwindow * window, double xoffset, double yoffset)
 void createMaterials()
 {
 // Emerald
-    material_Emerald.ambient = glm::vec3(0.2, 0.85, 0.2);
-    material_Emerald.diffuse = glm::vec3(0.2, 0.85, 0.2);
-    material_Emerald.specular = glm::vec3(0.7, 0.7, 0.7);
-    material_Emerald.shininess = 128.0f;
+    Emerald.ambient = glm::vec3(0.0, 0.1, 0.0);
+    Emerald.diffuse = glm::vec3(0.01, 0.5, 0.01);
+    Emerald.specular = glm::vec3(0.7, 0.7, 0.7);
+    Emerald.shininess = 64.0f;
+// Pearl
+    Pearl.ambient = glm::vec3(0.075, 0.075, 0.075);
+    Pearl.diffuse = glm::vec3(1.0, 1.0, 1.0);
+    Pearl.specular = glm::vec3(0.3, 0.3, 0.3);
+    Pearl.shininess = 2.0f;
+// Bronze
+    Bronze.ambient = glm::vec3(0.08, 0.0, 0.01);
+    Bronze.diffuse = glm::vec3(0.804, 0.5, 0.197);
+    Bronze.specular = glm::vec3(0.8, 0.8, 0.8);
+    Bronze.shininess = 64.0f;
+// Gold
+    Gold.ambient = glm::vec3(0.1, 0.085, 0.0);
+    Gold.diffuse = glm::vec3(0.8, 0.6, 0.0);
+    Gold.specular = glm::vec3(0.8, 0.8, 0.8);
+    Gold.shininess = 128.0f;
+// Cyan Plastic
+    Cyan_Plastic.ambient = glm::vec3(0.0f, 0.1f, 0.06f);
+    Cyan_Plastic.diffuse = glm::vec3(0.0f, 0.50980392f, 0.50980392f);
+    Cyan_Plastic.specular = glm::vec3(0.50196078f, 0.50196078f, 0.50196078f);
+    Cyan_Plastic.shininess = 32.0f;
+// Red Plastic
+    Red_Plastic.ambient = glm::vec3(0.85, 0.0, 0.0);
+    Red_Plastic.diffuse = glm::vec3(0.85, 0.0, 0.0);
+    Red_Plastic.specular = glm::vec3(0.55, 0.55, 0.55);
+    Red_Plastic.shininess = 64.0f;
+// Green Rubber
+    Green_Rubber.ambient = glm::vec3(0.2, 0.85, 0.2);
+    Green_Rubber.diffuse = glm::vec3(0.0, 1.0, 0.0);
+    Green_Rubber.specular = glm::vec3(0.2, 0.2, 0.2);
+    Green_Rubber.shininess = 8.0f;
+// Yellow Rubber
+    Yellow_Rubber.ambient = glm::vec3(1.0, 0.91, 0.356);
+    Yellow_Rubber.diffuse = glm::vec3(1.0, 0.91, 0.356);
+    Yellow_Rubber.specular = glm::vec3(0.1, 0.1, 0.1);
+    Yellow_Rubber.shininess = 8.0f;
 }
 
 /**************************************************************
@@ -335,50 +379,6 @@ void createMaterials()
 void createObject()
 {
     shader.loadShaders_File("shaders/shader.vert", "shaders/material.frag");
-    
-//    GLfloat vertices[] = {
-//        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-//        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-//        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-//        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-//        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-//        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-//        
-//        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-//        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-//        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-//        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-//        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-//        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-//        
-//        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-//        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-//        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-//        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-//        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-//        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-//        
-//        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-//        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-//        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-//        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-//        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-//        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-//        
-//        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-//        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-//        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-//        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-//        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-//        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-//        
-//        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-//        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-//        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-//        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-//        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-//        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-//    };
     
     GLfloat vertices[] = {
         -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -507,28 +507,29 @@ void transformObject()
 
 void setMaterials()
 {
+    graphics::Material currentMaterial = Bronze;
     glm::vec3 lightColor;
     lightColor.x = sin(glfwGetTime() * 2.0f);
     lightColor.y = sin(glfwGetTime() * 0.7f);
     lightColor.z = sin(glfwGetTime() * 1.3f);
     
-    glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f); // Decrease the Influence
-    glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f); // Low Influence
+    //glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f); // Decrease the Influence
+    //glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f); // Low Influence
     
-//    shader.setUniform("material.ambient", glm::vec3(1.0f, 0.5f, 0.31f));
-//    shader.setUniform("material.diffuse", glm::vec3(1.0f, 0.5f, 0.31f));
-//    shader.setUniform("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
-//    shader.setUniform("material.shininess", 32.0f);
-      shader.setUniform("material.ambient", material_Emerald.ambient);
-      shader.setUniform("material.diffuse", material_Emerald.diffuse);
-      shader.setUniform("material.specular", material_Emerald.specular);
-      shader.setUniform("material.shininess", material_Emerald.shininess);
+    shader.setUniform("material.ambient", currentMaterial.ambient);
+    shader.setUniform("material.diffuse", currentMaterial.diffuse);
+    shader.setUniform("material.specular", currentMaterial.specular);
+    shader.setUniform("material.shininess", currentMaterial.shininess);
 
     
     shader.setUniform("light.position", light.getPos());
-    shader.setUniform("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f));
+    /*shader.setUniform("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f));
     shader.setUniform("light.diffuse", glm::vec3(0.5f, 0.5f, 0.5f));
-    shader.setUniform("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
+    shader.setUniform("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));*/
+    
+    shader.setUniform("light.ambient", glm::vec3(1.0f));
+    shader.setUniform("light.diffuse", glm::vec3(1.0f));
+    shader.setUniform("light.specular", glm::vec3(1.0f));
 }
 
 /**************************************************************

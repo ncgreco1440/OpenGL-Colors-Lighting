@@ -53,10 +53,6 @@ public:
         {
             cameraPos.y += 0.5 * cameraSpeed;
         }
-        if(input[GLFW_KEY_H])
-        {
-            //jumping = true;
-        }
     }
     
     void look(double xpos, double ypos)
