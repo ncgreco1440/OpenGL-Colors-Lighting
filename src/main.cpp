@@ -23,7 +23,7 @@ bool masterKey = true;
  * Set up global variables for this application
  ************************************************************/
 GLFWwindow* window;
-GLuint VBO, VAO, IBO, lightVAO, texture1, texture2;
+GLuint VBO, VAO, IBO, lightVAO, texture1, texture2, texture3;
 const int WIDTH = 800;
 const int HEIGHT = 600;
 const char * TITLE = "OpenGL::Colors";
@@ -409,6 +409,18 @@ void loadTexture()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
     SOIL_free_image_data(image);
     glBindTexture(GL_TEXTURE_2D, 0);
+    
+// Loading third texture
+    image = SOIL_load_image("textures/icon_flame_512.png", &w, &h, 0, SOIL_LOAD_RGB);
+    glGenTextures(1, &texture3);
+    glBindTexture(GL_TEXTURE_2D, texture3);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+    SOIL_free_image_data(image);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 /**************************************************************
@@ -564,12 +576,19 @@ void setMaterials()
     //shader.setUniform("material.ambient", currentMaterial.ambient);
     shader.setUniform("material.diffuse", 0);
     shader.setUniform("material.specular", 1);
+    shader.setUniform("material.emission", 2);
     shader.setUniform("material.shininess", 32.0f);
-
     
     shader.setUniform("light.position", light.getPos());
+    
+    // Base Light Ambient, Diffuse, and Specular
+    /*
     shader.setUniform("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f));
     shader.setUniform("light.diffuse", glm::vec3(0.5f, 0.5f, 0.5f));
+    shader.setUniform("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
+    */
+    shader.setUniform("light.ambient", glm::vec3(0.25f, 0.25f, 0.25f));
+    shader.setUniform("light.diffuse", glm::vec3(1.0f, 1.0f, 1.0f));
     shader.setUniform("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
 }
 
@@ -584,11 +603,17 @@ void drawObject()
     transformObject();
     setMaterials();
     
-    glBindVertexArray(VAO);
+    
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture1);
+    
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, texture2);
+    
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, texture3);
+    
+    glBindVertexArray(VAO);
     
     glDrawArrays(GL_TRIANGLES, 0, 36);
     
