@@ -30,7 +30,7 @@ namespace shaders
         Shader_glsl();
         ~Shader_glsl();
         bool loadShaders_File(const char *, const char *);
-        bool loadShaders_CStr(const char *, const char *);
+        bool loadShaders_Str(const string&, const string&);
         void use();
         void unuse();
         void setUniform(const GLchar *, const int i);

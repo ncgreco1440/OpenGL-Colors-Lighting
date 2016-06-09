@@ -75,6 +75,19 @@ graphics::Material Cyan_Plastic;
 graphics::Material Red_Plastic;
 graphics::Material Green_Rubber;
 graphics::Material Yellow_Rubber;
+// Cube Party ////////////////////////////////////////////////
+glm::vec3 cubePositions[] = {
+    glm::vec3( 0.0f,  0.0f,  0.0f),
+    glm::vec3( 2.0f,  5.0f, -15.0f),
+    glm::vec3(-1.5f, -2.2f, -2.5f),
+    glm::vec3(-3.8f, -2.0f, -12.3f),
+    glm::vec3( 2.4f, -0.4f, -3.5f),
+    glm::vec3(-1.7f,  3.0f, -7.5f),
+    glm::vec3( 1.3f, -2.0f, -2.5f),
+    glm::vec3( 1.5f,  2.0f, -2.5f),
+    glm::vec3( 1.5f,  0.2f, -1.5f),
+    glm::vec3(-1.3f,  1.0f, -1.5f)
+};
 /*************************************************************
  * Camera SetUp
  ************************************************************/
@@ -512,7 +525,9 @@ void createObject()
 
 void createLamp()
 {
-    light.init();
+    //light.init();
+    //light.setDir(glm::vec3(-0.2f, -1.0f, -0.3f));
+    light.setPos(glm::vec3(1.2f, 1.0f, 2.0f));
     light.assignBuffers(VBO, lightVAO);
     light.setColor(1.0f, 1.0f, 1.0f);
     lightShader.loadShaders_File("shaders/shader.vert", "shaders/light.frag");
@@ -579,7 +594,11 @@ void setMaterials()
     shader.setUniform("material.emission", 2);
     shader.setUniform("material.shininess", 32.0f);
     
+    //light.setPos(glm::vec3(sin(glfwGetTime()) * 5, 0.0f, 2.0f));
     shader.setUniform("light.position", light.getPos());
+    
+    //light.setDir(glm::vec3(sin(glfwGetTime()), -1.0f, -0.3f));  for testing effects of lightDir
+    shader.setUniform("light.direction", light.getDir());
     
     // Base Light Ambient, Diffuse, and Specular
     /*
@@ -587,9 +606,14 @@ void setMaterials()
     shader.setUniform("light.diffuse", glm::vec3(0.5f, 0.5f, 0.5f));
     shader.setUniform("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
     */
-    shader.setUniform("light.ambient", glm::vec3(0.25f, 0.25f, 0.25f));
-    shader.setUniform("light.diffuse", glm::vec3(1.0f, 1.0f, 1.0f));
+    shader.setUniform("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f));
+    shader.setUniform("light.diffuse", glm::vec3(0.5f, 0.5f, 0.5f));
     shader.setUniform("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
+    
+    
+    shader.setUniform("light.constant", 1.0f);
+    shader.setUniform("light.linear", 0.09f);
+    shader.setUniform("light.quadratic", 0.032f);
 }
 
 /**************************************************************
@@ -600,7 +624,7 @@ void setMaterials()
  *************************************************************/
 void drawObject()
 {
-    transformObject();
+    //transformObject();
     setMaterials();
     
     
@@ -614,9 +638,19 @@ void drawObject()
     glBindTexture(GL_TEXTURE_2D, texture3);
     
     glBindVertexArray(VAO);
-    
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    
+    for(int i = 0; i < 10; i++)
+    {
+        glm::mat4 model;
+        glm::mat3 normal_model;
+        model = glm::translate(model, cubePositions[i]);
+        GLfloat angle = 20.0f * i;
+        model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+        
+        normal_model = glm::transpose(glm::inverse(glm::mat3(model)));
+        shader.setUniform("model", model);
+        shader.setUniform("normal_model", normal_model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
     glBindVertexArray(0);
 }
 

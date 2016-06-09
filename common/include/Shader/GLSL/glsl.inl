@@ -42,16 +42,19 @@ namespace shaders
         return true;
     }
     
-    bool Shader_glsl::loadShaders_CStr(const char * vector, const char * fragment)
+    bool Shader_glsl::loadShaders_Str(const string& vector, const string& fragment)
     {
+        const GLchar * vsStrPtr = vector.c_str();
+        const GLchar * fsStrPtr = fragment.c_str();
+        
         GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
         GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
         
         // Compile Shaders
-        glShaderSource(vertexShader, 1, &vector, nullptr);
+        glShaderSource(vertexShader, 1, &vsStrPtr, nullptr);
         glCompileShader(vertexShader);
         checkCompileErrors(vertexShader, VERTEX);
-        glShaderSource(fragmentShader, 1, &fragment, nullptr);
+        glShaderSource(fragmentShader, 1, &fsStrPtr, nullptr);
         glCompileShader(fragmentShader);
         checkCompileErrors(fragmentShader, FRAGMENT);
         

@@ -4,37 +4,36 @@
 #include "GL/glew.h"
 #include "Shader/GLSL/glsl.h"
 #include <glm/glm.hpp>
+#include <string>
 
 class Light
 {
 private:
+    shaders::GLSL_SHADER m_shader;
     GLuint m_VAO;
-    glm::vec3 m_lightPos;
     glm::vec3 m_color;
+    glm::vec3 m_lightDir;
+    glm::vec3 m_lightPos;
+    int m_type;
     
     void defaultShaders()
     {
-        const char * vertex = "#version 330 core\nlayout(location = 0) in vec3 pos;\nuniform mat4 model;\nuniform mat4 view\n;uniform mat4 projection;\n\nvoid main()\n{\ngl_Position = projection * view * model * vec4(pos, 1.0f);\n}";
-        const char * fragment = "#version 330 core\nout vec4 color;\nuniform vec4 lightClr;\nvoid main()\n{\ncolor=vec4(0.6f);\ncolor=lightClr;\n}";
-        m_shader.loadShaders_CStr(vertex, fragment);
-        //m_shader.loadShaders_File("shaders/shader.vert", "shaders/light.frag");
+        string vertex = "#version 330 core\nlayout(location = 0) in vec3 pos;\nuniform mat4 model;\nuniform mat4 view\n;uniform mat4 projection;\n\nvoid main()\n{\ngl_Position = projection * view * model * vec4(pos, 1.0f);\n}";
+        string fragment = "#version 330 core\nout vec4 color;\nuniform vec4 lightClr;\nvoid main()\n{\ncolor=vec4(0.6f);\ncolor=lightClr;\n}";
+        m_shader.loadShaders_Str(vertex, fragment);
     }
 public:
-    shaders::GLSL_SHADER m_shader;
-    Light()
-    {
-        m_color = glm::vec3(1.0f);
-    }
+    enum {DIRECTION, POINT};
+    Light():m_color(glm::vec3(1.0f)), m_lightDir(glm::vec3(0.0f)), m_lightPos(glm::vec3(0.0f)), m_shader()
+    {}
     
-    Light(GLuint vbo, GLuint vao)
+    Light(GLuint vbo, GLuint vao):m_color(glm::vec3(1.0f)), m_lightDir(glm::vec3(0.0f)), m_lightPos(glm::vec3(0.0f)), m_shader()
     {
-        this->defaultShaders();
         assignBuffers(vbo, vao);
     }
 
-    Light(const char * vertex, const char * fragment, GLuint vbo, GLuint vao)
+    Light(const char * vertex, const char * fragment, GLuint vbo, GLuint vao):m_color(glm::vec3(1.0f)), m_lightDir(glm::vec3(0.0f)), m_lightPos(glm::vec3(0.0f)), m_shader()
     {
-        m_shader.loadShaders_File(vertex, fragment);
         assignBuffers(vbo, vao);
     }
     
@@ -45,7 +44,12 @@ public:
     
     void init()
     {
-        this->m_lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
+        this->defaultShaders();
+    }
+    
+    void init(const char * vertex, const char * fragment)
+    {
+        this->defaultShaders();
     }
     
     void assignBuffers(GLuint vbo, GLuint vao)
@@ -63,6 +67,8 @@ public:
     
     void turnOn()
     {
+        m_shader.use();
+        
         this->draw();
     }
     
@@ -80,6 +86,11 @@ public:
         glBindVertexArray(0);
     }
     
+    void setType(int t)
+    {
+        m_type = t;
+    }
+    
     void setColor(float r, float g, float b)
     {
         m_color = glm::vec3(r,g,b);
@@ -90,9 +101,25 @@ public:
         return m_color;
     }
     
+    void setPos(const glm::vec3& pos)
+    {
+        this->m_lightPos = pos;
+    }
+
+    
     glm::vec3 getPos()
     {
         return m_lightPos;
+    }
+    
+    void setDir(const glm::vec3& dir)
+    {
+        this->m_lightDir = dir;
+    }
+    
+    glm::vec3 getDir()
+    {
+        return m_lightDir;
     }
 };
 
